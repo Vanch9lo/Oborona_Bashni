@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Башенная оборона</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%);
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+        }
+        
+        .game-container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        #gameCanvas {
+            background: linear-gradient(45deg, #27ae60 0%, #2ecc71 25%, #27ae60 50%, #229954 75%, #27ae60 100%);
+            border: 3px solid #34495e;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            cursor: crosshair;
+        }
+        
+        .sidebar {
+            width: 350px;
+            background: linear-gradient(180deg, #34495e 0%, #2c3e50 100%);
+            border-left: 3px solid #34495e;
+            padding: 20px;
+            overflow-y: auto;
+            color: white;
+        }
+        
+        .tower-shop {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 2px solid #3498db;
+        }
+        
+        .tower-item {
+            background: rgba(52, 73, 94, 0.8);
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .tower-item:hover {
+            background: rgba(52, 152, 219, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        .tower-item.selected {
+            background: rgba(52, 152, 219, 0.5);
+            border-color: #e74c3c;
+            box-shadow: 0 0 15px rgba(231, 76, 60, 0.5);
+        }
+        
+        .tower-item.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .tower-icon {
+            font-size: 24px;
+            margin-right: 10px;
+        }
+        
+        .game-stats {
+            background: rgba(0,0,0,0.4);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 2px solid #e74c3c;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 14px;
+        }
+        
+        .health-bar, .wave-progress {
+            height: 20px;
+            background: #34495e;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #3498db;
+            margin: 5px 0;
+        }
+        
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e74c3c 0%, #f39c12 50%, #27ae60 100%);
+            transition: width 0.3s ease;
+        }
+        
+        .wave-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db 0%, #9b59b6 100%);
+            transition: width 0.3s ease;
+        }
+        
+        .start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .game-over-screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            border: 3px solid #e74c3c;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            color: white;
+            z-index: 1000;
+            box-shadow: 0 0 30px rgba(231, 76, 60, 0.5);
+        }
+        
+        .btn-game {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+        
+        .btn-game:hover {
+            background: linear-gradient(45deg, #2980b9, #3498db);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+        }
+        
+        .btn-danger:hover {
+            background: linear-gradient(45deg, #c0392b, #e74c3c);
+        }
+        
+        .btn-success {
+            background: linear-gradient(45deg, #27ae60, #229954);
+        }
+        
+        .btn-success:hover {
+            background: linear-gradient(45deg, #229954, #27ae60);
+        }
+        
+        .economy-panel, .diplomacy-panel, .crafting-panel, .quest-panel {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 2px solid #e67e22;
+        }
+        
+        .quest-panel {
+            border-color: #8e44ad;
+        }
+        
+        .quest-tabs {
+            display: flex;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #8e44ad;
+        }
+        
+        .quest-tab {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #bdc3c7;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+            border-bottom: 2px solid transparent;
+        }
+        
+        .quest-tab.active {
+            color: #8e44ad;
+            border-bottom-color: #8e44ad;
+            background: rgba(142, 68, 173, 0.1);
+        }
+        
+        .quest-tab:hover {
+            color: #8e44ad;
+            background: rgba(142, 68, 173, 0.05);
+        }
+        
+        .quest-item {
+            background: rgba(52, 73, 94, 0.6);
+            border: 1px solid #8e44ad;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 8px 0;
+            transition: all 0.3s ease;
+            font-size: 12px;
+            position: relative;
+        }
+        
+        .quest-item.completed {
+            background: rgba(39, 174, 96, 0.3);
+            border-color: #27ae60;
+        }
+        
+        .quest-item.daily {
+            background: rgba(52, 152, 219, 0.3);
+            border-color: #3498db;
+        }
+        
+        .quest-item.legendary {
+            background: rgba(241, 196, 15, 0.3);
+            border-color: #f1c40f;
+            box-shadow: 0 0 10px rgba(241, 196, 15, 0.3);
+        }
+        
+        .quest-progress {
+            height: 6px;
+            background: #34495e;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+        
+        .quest-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #8e44ad 0%, #9b59b6 100%);
+            transition: width 0.3s ease;
+        }
+        
+        .quest-reward {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            color: #f39c12;
+            margin-top: 5px;
+        }
+        
+        .quest-difficulty {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        
+        .quest-difficulty.easy {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .quest-difficulty.medium {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .quest-difficulty.hard {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .quest-difficulty.legendary {
+            background: #f1c40f;
+            color: #2c3e50;
+        }
+        
+        .quest-notification {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(142, 68, 173, 0.95);
+            border: 2px solid #8e44ad;
+            border-radius: 10px;
+            padding: 15px;
+            color: white;
+            z-index: 200;
+            animation: questNotification 4s ease-in-out;
+            max-width: 300px;
+        }
+        
+        @keyframes questNotification {
+            0% { transform: translateX(100%); opacity: 0; }
+            15%, 85% { transform: translateX(0); opacity: 1; }
+            100% { transform: translateX(100%); opacity: 0; }
+        }
+        
+        .quest-complete-effect {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, #f1c40f 0%, transparent 70%);
+            border-radius: 50%;
+            animation: questComplete 1s ease-out;
+            pointer-events: none;
+        }
+        
+        @keyframes questComplete {
+            0% { transform: scale(0); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.8; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+        
+        .level-up-effect {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(241, 196, 15, 0.95);
+            border: 3px solid #f1c40f;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            color: #2c3e50;
+            z-index: 300;
+            animation: levelUp 3s ease-in-out;
+            font-weight: bold;
+        }
+        
+        @keyframes levelUp {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            20%, 80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0; }
+        }
+        
+        .building-item, .faction-item, .craft-item {
+            background: rgba(52, 73, 94, 0.6);
+            border: 1px solid #e67e22;
+            border-radius: 5px;
+            padding: 8px;
+            margin: 8px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+        }
+        
+        .building-item:hover, .craft-item:hover {
+            background: rgba(230, 126, 34, 0.3);
+        }
+        
+        .faction-item {
+            cursor: default;
+        }
+        
+        .building-item.built {
+            background: rgba(39, 174, 96, 0.3);
+            border-color: #27ae60;
+        }
+        
+        .craft-item.available {
+            background: rgba(52, 152, 219, 0.3);
+            border-color: #3498db;
+        }
+        
+        .multi-path {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .underground-indicator {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: rgba(139, 69, 19, 0.8);
+            border-radius: 50%;
+            border: 2px solid #8B4513;
+            animation: underground 2s infinite;
+        }
+        
+        @keyframes underground {
+            0%, 100% { transform: scale(1); opacity: 0.6; }
+            50% { transform: scale(1.2); opacity: 1; }
+        }
+        
+        .air-unit {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            border: 2px solid rgba(255,255,255,0.5);
+        }
+        
+        .stealth-unit {
+            opacity: 0.3;
+            animation: stealth 3s infinite;
+        }
+        
+        @keyframes stealth {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.7; }
+        }
+        
+        .shield-effect {
+            position: absolute;
+            border: 3px solid #3498db;
+            border-radius: 50%;
+            animation: shieldPulse 2s infinite;
+        }
+        
+        @keyframes shieldPulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 0.4; }
+        }
+        
+        .quantum-effect {
+            position: absolute;
+            background: radial-gradient(circle, #9b59b6 0%, transparent 70%);
+            border-radius: 50%;
+            animation: quantum 1s infinite;
+        }
+        
+        @keyframes quantum {
+            0%, 100% { transform: scale(0.8) rotate(0deg); opacity: 1; }
+            50% { transform: scale(1.2) rotate(180deg); opacity: 0.5; }
+        }
+        
+        .orbital-beam {
+            position: absolute;
+            width: 10px;
+            background: linear-gradient(to bottom, #f1c40f 0%, #e74c3c 100%);
+            box-shadow: 0 0 20px #f1c40f;
+            animation: orbitalStrike 2s ease-out;
+        }
+        
+        @keyframes orbitalStrike {
+            0% { height: 0; opacity: 1; }
+            50% { height: 100%; opacity: 1; }
+            100% { height: 100%; opacity: 0; }
+        }
+        
+        .time-distortion {
+            position: absolute;
+            border: 2px solid #9b59b6;
+            border-radius: 50%;
+            animation: timeWarp 3s infinite;
+        }
+        
+        @keyframes timeWarp {
+            0%, 100% { transform: scale(1) rotate(0deg); border-color: #9b59b6; }
+            33% { transform: scale(1.2) rotate(120deg); border-color: #3498db; }
+            66% { transform: scale(0.8) rotate(240deg); border-color: #e74c3c; }
+        }
+        
+        .resource-node {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background: radial-gradient(circle, #f1c40f 0%, #e67e22 100%);
+            border-radius: 50%;
+            border: 2px solid #f39c12;
+            animation: resourceGlow 2s infinite;
+        }
+        
+        @keyframes resourceGlow {
+            0%, 100% { box-shadow: 0 0 5px #f39c12; }
+            50% { box-shadow: 0 0 15px #f39c12, 0 0 25px #f39c12; }
+        }
+        
+        .portal-effect {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 3px solid #8e44ad;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(142, 68, 173, 0.3) 0%, transparent 70%);
+            animation: portal 2s infinite;
+        }
+        
+        @keyframes portal {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.3) rotate(180deg); }
+        }
+        
+        .research-item, .ability-item {
+            background: rgba(52, 73, 94, 0.6);
+            border: 1px solid #9b59b6;
+            border-radius: 5px;
+            padding: 8px;
+            margin: 8px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+        }
+        
+        .research-item:hover {
+            background: rgba(155, 89, 182, 0.3);
+        }
+        
+        .research-item.completed {
+            background: rgba(39, 174, 96, 0.3);
+            border-color: #27ae60;
+        }
+        
+        .ability-item button {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cooldown-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            transition: width 0.1s linear;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .boss-warning {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(231, 76, 60, 0.95);
+            border: 3px solid #c0392b;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            color: white;
+            z-index: 100;
+            animation: bossWarning 2s ease-in-out;
+        }
+        
+        @keyframes bossWarning {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+        }
+        
+        .achievement-popup {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(39, 174, 96, 0.95);
+            border: 2px solid #27ae60;
+            border-radius: 10px;
+            padding: 15px;
+            color: white;
+            z-index: 200;
+            animation: achievementSlide 3s ease-in-out;
+            max-width: 300px;
+        }
+        
+        @keyframes achievementSlide {
+            0% { transform: translateX(100%); opacity: 0; }
+            20%, 80% { transform: translateX(0); opacity: 1; }
+            100% { transform: translateX(100%); opacity: 0; }
+        }
+        
+        .damage-number {
+            position: absolute;
+            color: #e74c3c;
+            font-weight: bold;
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 50;
+            animation: damageFloat 1s ease-out forwards;
+        }
+        
+        @keyframes damageFloat {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-30px); opacity: 0; }
+        }
+        
+        .critical-hit {
+            color: #f39c12 !important;
+            font-size: 18px !important;
+            text-shadow: 0 0 5px #f39c12;
+        }
+        
+        .weather-effect {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+        
+        .rain-drop {
+            position: absolute;
+            width: 2px;
+            height: 10px;
+            background: rgba(52, 152, 219, 0.6);
+            animation: rainFall 1s linear infinite;
+        }
+        
+        @keyframes rainFall {
+            0% { transform: translateY(-10px); opacity: 1; }
+            100% { transform: translateY(710px); opacity: 0; }
+        }
+        
+        .lightning-flash {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.3);
+            animation: lightning 0.2s ease-in-out;
+        }
+        
+        @keyframes lightning {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+        
+        .enemy-info {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 15px;
+            border: 2px solid #9b59b6;
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 100;
+            border: 1px solid #3498db;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse {
+            animation: pulse 0.5s ease-in-out;
+        }
+        
+        .wave-incoming {
+            background: rgba(231, 76, 60, 0.2);
+            border: 2px solid #e74c3c;
+            animation: pulse 1s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="start-screen" id="startScreen">
+        <div class="text-center text-white">
+            <h1 class="display-2 mb-4" style="text-shadow: 0 0 20px #3498db;">
+                <i class="fas fa-chess-rook me-3"></i>БАШЕННАЯ ОБОРОНА
+            </h1>
+            <p class="lead mb-4">Защити свою базу от волн врагов!</p>
+            <button class="btn-game btn-lg" id="startButton">
+                <i class="fas fa-play me-2"></i>Начать защиту
+            </button>
+            <div class="mt-4">
+                <h5>Как играть:</h5>
+                <p style="font-size: 14px; max-width: 600px; margin: 0 auto;">
+                    • Покупайте башни и размещайте их на поле<br>
+                    • Улучшайте башни для увеличения урона<br>
+                    • Не дайте врагам дойти до вашей базы<br>
+                    • Каждая волна сильнее предыдущей
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="game-container">
+        <canvas id="gameCanvas" width="1000" height="700"></canvas>
+        
+        <div class="sidebar">
+            <div class="game-stats">
+                <h5 class="text-center mb-3"><i class="fas fa-chart-line me-2"></i>Статистика</h5>
+                <div class="stat-item">
+                    <span><i class="fas fa-coins me-1"></i>Золото:</span>
+                    <span id="gold" class="fw-bold text-warning">500</span>
+                </div>
+                <div class="stat-item">
+                    <span><i class="fas fa-heart me-1"></i>Жизни:</span>
+                    <span id="lives" class="fw-bold text-danger">20</span>
+                </div>
+                <div class="stat-item">
+                    <span><i class="fas fa-wave-square me-1"></i>Волна:</span>
+                    <span id="wave" class="fw-bold text-info">1</span>
+                </div>
+                <div class="stat-item">
+                    <span><i class="fas fa-skull me-1"></i>Убито:</span>
+                    <span id="killed" class="fw-bold text-success">0</span>
+                </div>
+                <div class="stat-item">
+                    <span><i class="fas fa-trophy me-1"></i>Очки:</span>
+                    <span id="score" class="fw-bold text-warning">0</span>
+                </div>
+                <div class="stat-item">
+                    <span><i class="fas fa-thermometer-half me-1"></i>Сложность:</span>
+                    <span id="difficulty" class="fw-bold text-danger">Легко</span>
+                </div>
+                <div class="stat-item">
+                    <span><i class="fas fa-globe me-1"></i>Планета:</span>
+                    <span id="planet" class="fw-bold text-info">Земля</span>
+                </div>
+                <div class="stat-item">
+                    <span><i class="fas fa-clock me-1"></i>Время:</span>
+                    <span id="gameTimer" class="fw-bold text-primary">00:00</span>
+                </div>
+                <div class="mt-2">
+                    <small>Прогресс волны:</small>
+                    <div class="wave-progress">
+                        <div class="wave-fill" id="waveProgress" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tower-shop">
+                <h5 class="text-center mb-3"><i class="fas fa-shopping-cart me-2"></i>Магазин башен</h5>
+                
+                <div class="tower-item" data-tower="basic">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-chess-rook tower-icon text-primary"></i>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">Базовая башня</div>
+                            <small>Урон: 25 | Скорость: Средняя | Точность: 95%</small>
+                            <div class="text-warning">Цена: 50 золота</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tower-item" data-tower="sniper">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-crosshairs tower-icon text-success"></i>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">Снайперская башня</div>
+                            <small>Урон: 100 | Скорость: Медленная | Пробивание</small>
+                            <div class="text-warning">Цена: 150 золота</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tower-item" data-tower="rapid">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-tachometer-alt tower-icon text-danger"></i>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">Скорострельная</div>
+                            <small>Урон: 15 | Скорость: Очень быстрая | Разгон</small>
+                            <div class="text-warning">Цена: 100 золота</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tower-item" data-tower="splash">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-bomb tower-icon text-warning"></i>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">Взрывная башня</div>
+                            <small>Урон: 50 | Область поражения | Поджог</small>
+                            <div class="text-warning">Цена: 200 золота</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tower-item" data-tower="freeze">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-snowflake tower-icon text-info"></i>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">Ледяная башня</div>
+                            <small>Урон: 20 | Замедляет врагов | Заморозка</small>
+                            <div class="text-warning">Цена: 120 золота</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tower-item" data-tower="laser">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-bolt tower-icon text-primary"></i>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">Лазерная башня</div>
+                            <small>Урон: 40 | Непрерывный луч | Перегрев</small>
+                            <div class="text-warning">Цена: 300 золота</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tower-item" data-tower="poison">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-skull-crossbones tower-icon text-success"></i>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">Ядовитая башня</div>
+                            <small>Урон: 30 | Отравление | Облако газа</small>
+                            <div class="text-warning">Цена: 180 золота</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tower-item" data-tower="orbital">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-satellite tower-icon text-info"></i>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">Орбитальная пушка</div>
+                            <small>Урон: 200 | Глобальная дальность | Перезарядка</small>
+                            <div class="text-warning">Цена: 500 золота</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tower-item" data-tower="quantum">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-atom tower-icon text-primary"></i>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">Квантовая башня</div>
+                            <small>Урон: 80 | Телепортация снарядов | Фазовый сдвиг</small>
+                            <div class="text-warning">Цена: 400 золота</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tower-item" data-tower="shield">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-shield-alt tower-icon text-success"></i>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">Щитовой генератор</div>
+                            <small>Защита: 500 | Поглощает урон | Энергетический щит</small>
+                            <div class="text-warning">Цена: 350 золота</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="economy-panel">
+                <h5 class="text-center mb-3"><i class="fas fa-industry me-2"></i>Экономика</h5>
+                <div class="stat-item">
+                    <span><i class="fas fa-cog me-1"></i>Производство:</span>
+                    <span id="production" class="fw-bold text-success">+5/сек</span>
+                </div>
+                <div class="stat-item">
+                    <span><i class="fas fa-bolt me-1"></i>Энергия:</span>
+                    <span id="energy" class="fw-bold text-info">100/100</span>
+                </div>
+                <div class="stat-item">
+                    <span><i class="fas fa-gem me-1"></i>Кристаллы:</span>
+                    <span id="crystals" class="fw-bold text-primary">0</span>
+                </div>
+                
+                <div class="building-item" data-building="generator">
+                    <div class="d-flex justify-content-between">
+                        <span><i class="fas fa-bolt me-1"></i>Генератор</span>
+                        <span class="text-warning">100 золота</span>
+                    </div>
+                    <small>+20 энергии, +2 производства</small>
+                </div>
+                
+                <div class="building-item" data-building="mine">
+                    <div class="d-flex justify-content-between">
+                        <span><i class="fas fa-gem me-1"></i>Шахта</span>
+                        <span class="text-warning">200 золота</span>
+                    </div>
+                    <small>+1 кристалл/10сек, +3 производства</small>
+                </div>
+                
+                <div class="building-item" data-building="factory">
+                    <div class="d-flex justify-content-between">
+                        <span><i class="fas fa-industry me-1"></i>Фабрика</span>
+                        <span class="text-warning">300 золота</span>
+                    </div>
+                    <small>+10 производства, автоулучшения</small>
+                </div>
+            </div>
+            
+            <div class="diplomacy-panel">
+                <h5 class="text-center mb-3"><i class="fas fa-handshake me-2"></i>Дипломатия</h5>
+                <div class="faction-item" data-faction="alliance">
+                    <div class="d-flex justify-content-between">
+                        <span><i class="fas fa-shield me-1"></i>Альянс</span>
+                        <span id="allianceRep" class="text-success">Нейтрально</span>
+                    </div>
+                    <div class="progress mt-1" style="height: 4px;">
+                        <div class="progress-bar bg-success" id="allianceBar" style="width: 50%"></div>
+                    </div>
+                </div>
+                
+                <div class="faction-item" data-faction="pirates">
+                    <div class="d-flex justify-content-between">
+                        <span><i class="fas fa-skull-crossbones me-1"></i>Пираты</span>
+                        <span id="piratesRep" class="text-danger">Враждебно</span>
+                    </div>
+                    <div class="progress mt-1" style="height: 4px;">
+                        <div class="progress-bar bg-danger" id="piratesBar" style="width: 20%"></div>
+                    </div>
+                </div>
+                
+                <div class="faction-item" data-faction="traders">
+                    <div class="d-flex justify-content-between">
+                        <span><i class="fas fa-coins me-1"></i>Торговцы</span>
+                        <span id="tradersRep" class="text-warning">Дружелюбно</span>
+                    </div>
+                    <div class="progress mt-1" style="height: 4px;">
+                        <div class="progress-bar bg-warning" id="tradersBar" style="width: 80%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="crafting-panel">
+                <h5 class="text-center mb-3"><i class="fas fa-hammer me-2"></i>Крафт</h5>
+                
+                <div class="craft-item" data-craft="superweapon">
+                    <div class="fw-bold">Супероружие</div>
+                    <small>10 кристаллов + 1000 золота</small>
+                    <div class="text-info">Уничтожает всех врагов на экране</div>
+                </div>
+                
+                <div class="craft-item" data-craft="timewarp">
+                    <div class="fw-bold">Искажение времени</div>
+                    <small>5 кристаллов + 500 золота</small>
+                    <div class="text-info">Замедляет время для врагов</div>
+                </div>
+                
+                <div class="craft-item" data-craft="fortress">
+                    <div class="fw-bold">Крепость</div>
+                    <small>15 кристаллов + 2000 золота</div>
+                    <div class="text-info">Неразрушимая защитная структура</div>
+                </div>
+            </div>
+            
+            <div class="quest-panel">
+                <h5 class="text-center mb-3"><i class="fas fa-scroll me-2"></i>Квесты</h5>
+                
+                <div class="quest-tabs">
+                    <button class="quest-tab active" data-tab="active">Активные</button>
+                    <button class="quest-tab" data-tab="completed">Завершенные</button>
+                    <button class="quest-tab" data-tab="daily">Ежедневные</button>
+                </div>
+                
+                <div class="quest-list" id="activeQuests">
+                    <!-- Квесты будут добавляться динамически -->
+                </div>
+                
+                <div class="quest-list d-none" id="completedQuests">
+                    <!-- Завершенные квесты -->
+                </div>
+                
+                <div class="quest-list d-none" id="dailyQuests">
+                    <!-- Ежедневные квесты -->
+                </div>
+                
+                <div class="quest-rewards mt-3">
+                    <h6><i class="fas fa-gift me-2"></i>Награды за квесты:</h6>
+                    <div class="stat-item">
+                        <span><i class="fas fa-star me-1"></i>Опыт:</span>
+                        <span id="experience" class="fw-bold text-success">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span><i class="fas fa-medal me-1"></i>Уровень:</span>
+                        <span id="playerLevel" class="fw-bold text-primary">1</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="research-panel">
+                <h5 class="text-center mb-3"><i class="fas fa-flask me-2"></i>Исследования</h5>
+                <div class="research-points mb-2">
+                    <i class="fas fa-atom me-1"></i>Очки: <span id="researchPoints" class="text-info">0</span>
+                </div>
+                
+                <div class="research-item" data-research="damage">
+                    <div class="d-flex justify-content-between">
+                        <span>Урон +10%</span>
+                        <span class="text-warning">5 очков</span>
+                    </div>
+                    <div class="progress mt-1" style="height: 4px;">
+                        <div class="progress-bar bg-info" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <div class="research-item" data-research="range">
+                    <div class="d-flex justify-content-between">
+                        <span>Дальность +15%</span>
+                        <span class="text-warning">4 очков</span>
+                    </div>
+                    <div class="progress mt-1" style="height: 4px;">
+                        <div class="progress-bar bg-success" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <div class="research-item" data-research="speed">
+                    <div class="d-flex justify-content-between">
+                        <span>Скорость +20%</span>
+                        <span class="text-warning">6 очков</span>
+                    </div>
+                    <div class="progress mt-1" style="height: 4px;">
+                        <div class="progress-bar bg-danger" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <div class="research-item" data-research="economy">
+                    <div class="d-flex justify-content-between">
+                        <span>Доход +25%</span>
+                        <span class="text-warning">8 очков</span>
+                    </div>
+                    <div class="progress mt-1" style="height: 4px;">
+                        <div class="progress-bar bg-warning" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="abilities-panel">
+                <h5 class="text-center mb-3"><i class="fas fa-magic me-2"></i>Способности</h5>
+                
+                <div class="ability-item" data-ability="airstrike">
+                    <button class="btn-game btn-danger w-100 mb-2" id="airstrikeBtn">
+                        <i class="fas fa-plane me-2"></i>Авиаудар (300 золота)
+                        <div class="cooldown-overlay d-none"></div>
+                    </button>
+                </div>
+                
+                <div class="ability-item" data-ability="freeze">
+                    <button class="btn-game btn-info w-100 mb-2" id="freezeBtn">
+                        <i class="fas fa-snowflake me-2"></i>Заморозка (200 золота)
+                        <div class="cooldown-overlay d-none"></div>
+                    </button>
+                </div>
+                
+                <div class="ability-item" data-ability="repair">
+                    <button class="btn-game btn-success w-100 mb-2" id="repairBtn">
+                        <i class="fas fa-wrench me-2"></i>Ремонт (+5 жизней, 400 золота)
+                        <div class="cooldown-overlay d-none"></div>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="upgrade-panel d-none" id="upgradePanel">
+                <h5 class="text-center mb-3"><i class="fas fa-arrow-up me-2"></i>Улучшения</h5>
+                <div id="towerInfo"></div>
+                <div class="mt-3">
+                    <button class="btn-game btn-success w-100 mb-2" id="upgradeTower">
+                        <i class="fas fa-level-up-alt me-2"></i>Улучшить
+                    </button>
+                    <button class="btn-game btn-info w-100 mb-2" id="specializeTower">
+                        <i class="fas fa-star me-2"></i>Специализация
+                    </button>
+                    <button class="btn-game btn-danger w-100" id="sellTower">
+                        <i class="fas fa-trash me-2"></i>Продать
+                    </button>
+                </div>
+            </div>
+            
+            <div class="enemy-info">
+                <h5 class="text-center mb-3"><i class="fas fa-info-circle me-2"></i>Следующая волна</h5>
+                <div id="nextWaveInfo">
+                    <div class="mb-2">
+                        <i class="fas fa-running me-2"></i>Быстрые враги: <span class="text-info">5</span>
+                    </div>
+                    <div class="mb-2">
+                        <i class="fas fa-shield-alt me-2"></i>Бронированные: <span class="text-warning">2</span>
+                    </div>
+                </div>
+                <button class="btn-game btn-success w-100 mt-3" id="startWave">
+                    <i class="fas fa-play me-2"></i>Начать волну
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="game-over-screen d-none" id="gameOverScreen">
+        <h2 class="mb-4"><i class="fas fa-flag me-2"></i>ИГРА ОКОНЧЕНА</h2>
+        <div class="mb-3">
+            <div>Волна достигнута: <span id="finalWave" class="fw-bold text-info">1</span></div>
+            <div>Врагов убито: <span id="finalKilled" class="fw-bold text-success">0</span></div>
+            <div>Золота заработано: <span id="finalGold" class="fw-bold text-warning">0</span></div>
+        </div>
+        <button class="btn-game" id="restartButton">
+            <i class="fas fa-redo me-2"></i>Играть снова
+        </button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
